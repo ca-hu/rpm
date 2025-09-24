@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "system.h"
 
 #include <selinux/selinux.h>
@@ -168,6 +170,13 @@ static rpmRC selinux_fsm_file_prepare(rpmPlugin plugin, rpmfi fi, int fd,
 
 	    if (conrc == 0 || (conrc < 0 && errno == EOPNOTSUPP))
 		rc = RPMRC_OK;
+	    else {
+		char *tup = getenv("TRANSACTIONAL_UPDATE");
+		if (tup != NULL && !strncmp(tup, "true", 4)) {
+		    rpmlog(RPMLOG_DEBUG, "lsetfilecon failed, will be healed upon reboot (transactional update): (%s, %s)\n", path, scon);
+		    rc = RPMRC_OK;
+		}
+	    }
 
 	    rpmlog(loglvl(rc != RPMRC_OK), "lsetfilecon: (%d %s, %s) %s\n",
 		       fd, path, scon, (conrc < 0 ? strerror(errno) : ""));
